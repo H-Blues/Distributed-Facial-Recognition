@@ -1,15 +1,39 @@
-<!DOCTYPE html>
 <html>
-  <body>
-    <div class="container">
-        <div class="row">
-            <div class="col-lg-8  offset-lg-2">
-                <h3 class="mt-5">Live Streaming</h3>
-                <img src="{{ url_for('video_feed') }}" width="100%">
-            </div>
-        </div>
-    </div>
-    </body>
+<head>
+    <title>
+        Face Recognition Web App
+    </title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.4.0/css/bootstrap.min.css">
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.4.1/jquery.min.js"></script>
+    <script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.4.0/js/bootstrap.min.js"></script>
+    <script src="https://unpkg.com/ml5@0.4.3/dist/ml5.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/webcamjs/1.0.26/webcam.js"></script>
+    <link rel="stylesheet" type="text/css" href="../static/index.css">
+</head>
+<body id="body">
+<center>
+    <h1 id="title">Face Recognition Web App</h1>
+    <hr>
+    <br>
+    <p style="font-size: 22px;">Webcam View</p>
+    <img id="camera">
+    <br>
+    <hr>
+    <br>
+    <a href="#" class="button" onclick="connect()">Connect</a>
+    <a href="#" class="button" onclick="disconnect()">Disconnect</a>
+</center>
+<script>
+    var camera = document.getElementById('camera');
 
+    function connect() {
+        camera.src = "{{ url_for('video_feed') }}";
+    }
 
+    function disconnect() {
+        camera.src = "";
+    }
+</script>
+</body>
 </html>
