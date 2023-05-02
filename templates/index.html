@@ -10,6 +10,7 @@
     <script src="https://unpkg.com/ml5@0.4.3/dist/ml5.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/webcamjs/1.0.26/webcam.js"></script>
     <link rel="stylesheet" type="text/css" href="../static/index.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.2.0/socket.io.min.js"></script>
 </head>
 <body id="body">
 <center>
@@ -17,7 +18,7 @@
     <hr>
     <br>
     <p style="font-size: 22px;">Webcam View</p>
-    <img id="camera">
+    <img id="camera" src="https://i.pinimg.com/originals/80/b5/81/80b5813d8ad81a765ca47ebc59a65ac3.jpg">
     <br>
     <hr>
     <br>
@@ -26,13 +27,20 @@
 </center>
 <script>
     var camera = document.getElementById('camera');
+    var socket = null;
 
     function connect() {
-        camera.src = "{{ url_for('video_feed') }}";
+        socket = io.connect();
+        socket.on('image', function (data) {
+            camera.src = "data:image/jpeg;base64," + data;
+        });
     }
 
     function disconnect() {
-        camera.src = "";
+        if (socket) {
+            socket.disconnect();
+            camera.src = "https://i.pinimg.com/originals/80/b5/81/80b5813d8ad81a765ca47ebc59a65ac3.jpg";
+        }
     }
 </script>
 </body>

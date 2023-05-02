@@ -1,95 +1,56 @@
-from flask import Flask, render_template, Response
+from flask import Flask, render_template, request
+from flask_socketio import SocketIO
 import cv2
-import face_recognition
-import numpy as np
+from FaceRecognizer import FaceRecognizer
+from threading import Thread
+import base64
 
 app = Flask(__name__)
-camera = cv2.VideoCapture(0)
+socketio = SocketIO(app)
 
-# Load a sample picture and learn how to recognize it.
-zihan_image = face_recognition.load_image_file("images/zihan.jpg")
-zihan_face_encoding = face_recognition.face_encodings(zihan_image)[0]
+stop_camera_feed = False
 
-# Load a second sample picture and learn how to recognize it.
-yifei_image = face_recognition.load_image_file("images/yifei.jpg")
-yifei_face_encoding = face_recognition.face_encodings(yifei_image)[0]
-
-# Create arrays of known face encodings and their names
-known_face_encodings = [
-    zihan_face_encoding,
-    yifei_face_encoding
-]
-
-known_face_names = [
-    "Zihan",
-    "Yifei"
-]
-# Initialize some variables
-face_locations = []
-face_encodings = []
-face_names = []
-process_this_frame = True
-
-def gen_frames():
-    while True:
-        success, frame = camera.read()  # read the camera frame
-        if not success:
-            break
-        else:
-            # Resize frame of video to 1/4 size for faster face recognition processing
-            small_frame = cv2.resize(frame, (0, 0), fx=0.25, fy=0.25)
-            # Convert the image from BGR color (which OpenCV uses) to RGB color (which face_recognition uses)
-            rgb_small_frame = small_frame[:, :, ::-1]
-
-            # Only process every other frame of video to save time
-
-            # Find all the faces and face encodings in the current frame of video
-            face_locations = face_recognition.face_locations(rgb_small_frame)
-            face_encodings = face_recognition.face_encodings(rgb_small_frame, face_locations)
-            face_names = []
-            for face_encoding in face_encodings:
-                # See if the face is a match for the known face(s)
-                matches = face_recognition.compare_faces(known_face_encodings, face_encoding)
-                name = "Unknown"
-                # Or instead, use the known face with the smallest distance to the new face
-                face_distances = face_recognition.face_distance(known_face_encodings, face_encoding)
-                best_match_index = np.argmin(face_distances)
-                if matches[best_match_index]:
-                    name = known_face_names[best_match_index]
-
-                face_names.append(name)
-
-            # Display the results
-            for (top, right, bottom, left), name in zip(face_locations, face_names):
-                # Scale back up face locations since the frame we detected in was scaled to 1/4 size
-                top *= 4
-                right *= 4
-                bottom *= 4
-                left *= 4
-
-                # Draw a box around the face
-                cv2.rectangle(frame, (left, top), (right, bottom), (0, 0, 255), 2)
-
-                # Draw a label with a name below the face
-                cv2.rectangle(frame, (left, bottom - 35), (right, bottom), (0, 0, 255), cv2.FILLED)
-                font = cv2.FONT_HERSHEY_DUPLEX
-                cv2.putText(frame, name, (left + 6, bottom - 6), font, 1.0, (255, 255, 255), 1)
-
-            ret, buffer = cv2.imencode('.jpg', frame)
-            frame = buffer.tobytes()
-            yield (b'--frame\r\n'
-                   b'Content-Type: image/jpeg\r\n\r\n' + frame + b'\r\n')
-
+# Initialize the face recognizer with known faces
+face_recognizer = FaceRecognizer('./known_faces.txt')
 
 @app.route('/')
 def index():
     return render_template('index.html')
 
+@socketio.on('connect')
+def handle_connect():
+    # Create a new thread for each client to handle the camera feed
+    thread = Thread(target=handle_camera_feed)
+    thread.start()
 
-@app.route('/video_feed')
-def video_feed():
-    return Response(gen_frames(), mimetype='multipart/x-mixed-replace; boundary=frame')
+@socketio.on('disconnect')
+def handle_disconnect():
+    # Set a flag to stop the camera feed thread
+    global stop_camera_feed
+    stop_camera_feed = True
+    print("disconnect")
+
+def handle_camera_feed():
+    global stop_camera_feed
+    stop_camera_feed = False
+
+    # Initialize the camera
+    camera = cv2.VideoCapture(0)
+
+    while not stop_camera_feed:
+        success, frame = camera.read()
+        if not success:
+            break
+        else:
+            # Recognize faces in the current frame
+            image_bytes = face_recognizer.recognize_faces(frame)
+            image_base64 = base64.b64encode(image_bytes).decode('utf-8')
+            # Send the image bytes to the client
+            socketio.emit('image', image_base64)
+
+    # Release the camera when we're done
+    camera.release()
 
 
 if __name__ == '__main__':
-    app.run(debug=True)
+    socketio.run(app, debug=True)
