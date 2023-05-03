@@ -1,8 +1,6 @@
 <html>
 <head>
-    <title>
-        Face Recognition Web App
-    </title>
+    <title>Face Recognition Web App</title>
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.4.0/css/bootstrap.min.css">
     <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.4.1/jquery.min.js"></script>
@@ -12,36 +10,60 @@
     <link rel="stylesheet" type="text/css" href="../static/index.css">
     <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.2.0/socket.io.min.js"></script>
 </head>
-<body id="body">
+<body>
 <center>
-    <h1 id="title">Face Recognition Web App</h1>
+    <h1>Face Recognition Web App</h1>
     <hr>
     <br>
     <p style="font-size: 22px;">Webcam View</p>
-    <img id="camera" src="https://i.pinimg.com/originals/80/b5/81/80b5813d8ad81a765ca47ebc59a65ac3.jpg">
+    <img id="camera" width="500" height="400" src="../static/disconnected.png">
     <br>
     <hr>
     <br>
-    <a href="#" class="button" onclick="connect()">Connect</a>
-    <a href="#" class="button" onclick="disconnect()">Disconnect</a>
+    <a href="#" class="button" id="connect-btn">Connect</a>
+    <a href="#" class="button" id="disconnect-btn">Disconnect</a>
 </center>
 <script>
+    var socket = io.connect();
     var camera = document.getElementById('camera');
-    var socket = null;
+    var connectBtn = document.getElementById('connect-btn');
+    var disconnectBtn = document.getElementById('disconnect-btn');
 
-    function connect() {
-        socket = io.connect();
-        socket.on('image', function (data) {
-            camera.src = "data:image/jpeg;base64," + data;
-        });
+    // Start the webcam when the page is loaded
+    Webcam.set({
+        width: 500,
+        height: 400,
+        image_format: 'jpeg',
+        jpeg_quality: 90
+    });
+    Webcam.attach('#camera');
+
+    // Connect to the Flask server and start streaming the webcam feed
+    connectBtn.onclick = function () {
+        function sendImage() {
+            Webcam.snap(function (data_uri) {
+                socket.emit('originImage', data_uri);
+            });
+        }
+
+        setInterval(sendImage, 500);  // Send images at 30 fps
     }
 
-    function disconnect() {
+    // Handle incoming image data from the Flask server
+    socket.on('detectedImage', function (data) {
+        camera.src = "data:image/jpeg;base64," + data;
+    });
+
+
+    // Disconnect from the Flask server and stop streaming the webcam feed
+    disconnectBtn.onclick = function () {
+        Webcam.reset('#camera');
+        camera.src = "../static/disconnected.png";
         if (socket) {
             socket.disconnect();
-            camera.src = "https://i.pinimg.com/originals/80/b5/81/80b5813d8ad81a765ca47ebc59a65ac3.jpg";
         }
     }
+
 </script>
 </body>
 </html>
