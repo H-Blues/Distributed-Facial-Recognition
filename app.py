@@ -1,6 +1,6 @@
 import numpy as np
 from flask import Flask, render_template, request
-from flask_socketio import SocketIO, emit
+from flask_socketio import SocketIO
 import cv2
 from FaceRecognizer import FaceRecognizer
 from threading import Thread
@@ -40,7 +40,6 @@ def handle_connect():
 def handle_origin_img_event(data_uri):
     sid = request.sid
     data_uri_queue[sid].append(data_uri)
-
 
 @socketio.on('disconnect')
 def handle_disconnect():

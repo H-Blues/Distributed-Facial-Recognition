@@ -34,7 +34,7 @@
         width: 500,
         height: 400,
         image_format: 'jpeg',
-        jpeg_quality: 90
+        jpeg_quality: 60
     });
     Webcam.attach('#camera');
 
@@ -46,7 +46,7 @@
             });
         }
 
-        setInterval(sendImage, 500);  // Send images at 30 fps
+        setInterval(sendImage, 100);  // Send images at 10 fps
     }
 
     // Handle incoming image data from the Flask server

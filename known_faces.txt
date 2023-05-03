@@ -1,2 +1,3 @@
 Zihan,images/zihan.jpg
-Yifei,images/yifei.jpg
+Biden,images/biden.jpg
+Obama,images/obama.jpg
